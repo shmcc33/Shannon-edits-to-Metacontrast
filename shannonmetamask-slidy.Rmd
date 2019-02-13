@@ -1,0 +1,175 @@
+---
+title: "CogLab Data Presentation"
+author: "Jamie Daniels & Shannon McCarthy"
+date: "February 14, 2019"
+output:
+  slidy_presentation: default
+  ioslides_presentation: default
+  beamer_presentation: default
+subtitle: Metacontrast Masking
+---
+Introduction
+===
+
+- Visual masking experiments are used to better understand the mechanisms of visual information processing.
+- Different types of masking exist.
+  - Forward masking: masking stimuli precedes target stimuli
+  - Backward masking: masking stimuli follows target stimuli
+  - Simultaneous masking: masking stimuli and target stimuli occur together
+
+Background 
+===
+
+- Visual perception is a process that can be interrupted or blocked by the introduction of a mask.
+  - A mask is a brief stimuli that disrupts the perception of the target stimuli. 
+- Metacontrast masking is a specific type of backward masking in which there is no overlapping contours. 
+  - The time between the presentation of the target stimuli and the masking stimuli varies between trials and is defined as the stimulus onset asynchrony (SOA).
+- The purpose of this experiment is to have participants focus on the fixation point at the center of the screen and determine the position of the target stimuli (a rectangle) as one of the following: top left, top right, bottom left, or bottom right 
+  - Three other squares will appear around the fixation point in addition to the rectangle.
+  - Masking stimuli in the form of boxes around the stimuli will appear after the presentation of the stimuli. 
+
+Methods
+===
+
+**Variables of Interest**
+
+| Independent Variables      | Dependent Variable             | Constant       |
+|:----------------------------:|:---------------------------------:|:----------------:|
+| Stimulus Onset Asynchrony  | Proportion of correct responses | Fixation Point | 
+| Horizontal Object Position |                                 |                | 
+| Vertical Object Position   |                                 |                | 
+
+**Participants**
+
+- 77 undergraduate students ages (17-25)
+- Males and Females 
+- The students participated in this lab as part of the labratory in sensory processing class. 
+
+Methods
+===
+
+**Equipment**
+
+- Web Browser
+- Computer or Tablet 
+- LCD screen 
+- Working internet connection
+- Keyboard/mouse/touchscreen capability (if tablet)
+
+Methods
+===
+
+**Procedures** 
+
+- Participants focus on the fixation point located at the middle of the screen
+- Trials are self-initiated, press the "start next trial" button to begin a new trial, press the "redo trial" button redo a trial.
+- In each trial, stimuli (3 squares and 1 rectangle) appeared on four corners of the screen for 30 ms
+- Masking stimuli (boxes around target stimuli) appeared on screen for 30 ms
+  - Time between the onset of target stimuli and the onset of masking stimuli varied from trial to trial, ranging from 0 ms to 180 ms
+- Participants instructed to determine the location the rectangle in each trial
+  - Participants chose from four options: top right, bottom right, top left, and bottom left
+  - After participant made decision, feedback in the form of "Correct!" or "Sorry, incorrect" appeared on the screen
+
+
+Data Wrangling
+===
+
+```{r setup, include=FALSE}
+#knitr::opts_chunk$set(echo = FALSE)
+
+```
+
+Data Wrangling
+===
+
+```{r setup_rmd, echo=TRUE, warning=FALSE, message=FALSE}
+library("tidyverse")
+library("forcats")
+
+data_file <-"mmask_all.csv"
+
+data_set <- read_csv(ifelse(!file.exists(data_file),
+                            paste("./CogLab_reports/coglab_pres/",
+                                  data_file,sep="/"),data_file))
+
+```
+- Display code chunk. Do not display R warnings or messages.  
+- Load the dataset `tidyverse`
+- Load the dataset `forcats`
+- Save the data *mmask_all.csv* and assign it to the variable `data_file`
+- Read comma delimited file and assign it to the variable `data_set`
+
+Data Wrangling 
+===
+
+```{r soa_count, echo=TRUE}
+
+mask_acc<-data_set %>%
+  group_by(randomGator,SOA) %>%
+  count(Accuracy) %>%
+  mutate(prop = prop.table(n)) # Filled in missing conmbinations of Accuracy, Target, SOA
+
+
+```
+
+Data Wrangling
+===
+
+```{r subj_avg_grp, echo=TRUE}
+
+maska <- mask_acc %>%
+  group_by(randomGator) %>%
+  complete(Accuracy, SOA, fill = list(n = 0,prop = 0))
+
+maska_grp <- maska %>% 
+  group_by(Accuracy, SOA) %>% 
+  summarise(sd=sd(prop),avg=mean(prop),ymin=avg-sd,ymax=avg+sd)
+
+
+```
+- Display the code chunk.
+- Save the data mask_acc and assign it to the variable maska.
+- Group the data by variability. 
+- Complete the data frame so that missing combinations of accuracy and SOA are filled in. 
+
+- Save the newly grouped and completed data maska and assign it to the variable maska_grp
+- Group the data maska_grp by accuracy and SOA
+- Summarize the data maska to find the standard deviation, mean, minimum, and maximum
+
+Results
+===
+
+```{r group_plot1, echo=TRUE, warning=FALSE}
+
+ggplot(maska_grp %>% filter(Accuracy== 1),aes(x=SOA, y=avg, group= Accuracy)) +
+  geom_line(size=2,color="royalblue") +
+  geom_point(size = 3,color="royalblue") +
+  geom_errorbar(aes(y=avg,ymin = ymin, ymax = ymax),width=0.7,color="royalblue")+
+  scale_x_continuous(breaks = c(0,30,60,90,120,150,180))+
+  scale_y_continuous("Proportion",breaks = c(-0.25,0.0,0.25,0.50,0.75,1.0)) + 
+  theme_bw(24)+coord_cartesian(ylim=c(0,1))
+
+
+```
+
+ - Data from all subjects 
+ - Curve is U-shaped
+
+---
+
+```{r echo=FALSE, warning=FALSE}
+
+
+
+```
+
+
+```{r echo=FALSE, fig.asp=0.3, fig.width=11}
+
+
+
+```
+
+Discussion of Results
+=== 
+- Overall, the proportion of correct responses from participants is highest at the lowest SOAs and highest SOAs. At intermediate SOAs, the proportion of correct responses from the participants is lowest. 
